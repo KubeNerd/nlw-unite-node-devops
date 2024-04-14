@@ -8,7 +8,7 @@ image:
   repository: viniciuspoa2/nlwunite_backend
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "novatagzaa"
+  tag: "af4c15f"
   port: 3333
 
   env:
