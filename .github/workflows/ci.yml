@@ -37,7 +37,7 @@ jobs:
             echo "sha=$SHA" >> $GITHUB_OUTPUT
 
       - name: Build docker image
-        run: docker build -t ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} -f /backend .
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} .
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
