@@ -34,11 +34,11 @@ jobs:
             echo "sha=$SHA" >> $GITHUB_OUTPUT
 
       - name: Build docker image
-        run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ github.repository }}:${{ steps.generate_sha.outputs.sha }} .
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}/backend:${{ steps.generate_sha.outputs.sha }} .
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ secrets.REGISTRY_NAME }}/${{ github.repository }}:${{ steps.generate_sha.outputs.sha }}'
+          image-ref: '${{ secrets.REGISTRY_NAME }}/backend:${{ steps.generate_sha.outputs.sha }}'
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
@@ -54,10 +54,10 @@ jobs:
       - name: Push image
         run: |
             echo "Pushing image with tag ${SHA}"
-            docker push ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }}
-            docker tag ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:latest
+            docker push ${{ secrets.REGISTRY_NAME }}/backend:${{ steps.generate_sha.outputs.sha }}
+            docker tag ${{ secrets.REGISTRY_NAME }}/backend:${{ steps.generate_sha.outputs.sha }} ${{ secrets.REGISTRY_NAME }}/backend:latest
             echo "Pushing image with tag latest"
-            docker push ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:latest
+            docker push ${{ secrets.REGISTRY_NAME }}/backend:latest
 
       - name: Update tag Image 
         run: |
