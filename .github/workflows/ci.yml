@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-
-env:
-  IMAGE_NAME: ${{ github.repository }}
 jobs:
   gitleaks-code-analysis:
     name: 'Security GitLeaks Job'
@@ -37,16 +34,18 @@ jobs:
             echo "sha=$SHA" >> $GITHUB_OUTPUT
 
       - name: Build docker image
-        run: docker build -t ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} .
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.generate_sha.outputs.sha }} .
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }}'
+          image-ref: '${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.generate_sha.outputs.sha }}'
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+        env:
+          IMAGE_NAME: ${{ github.repository }}
       
       - name: Login container registry
         uses: docker/login-action@v3
