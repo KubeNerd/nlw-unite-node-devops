@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aks-helloworld-service
+  namespace: nlwunite
+spec:
+  type: ClusterIP
+  selector:
+    app: aks-helloworld
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

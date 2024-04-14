@@ -1,0 +1,33 @@
+version: '3.7'
+services:
+  db:
+    container_name: nlw_database
+    image: postgres:16.2-alpine3.19
+    restart: always
+    environment:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - 5432:5432
+    networks:
+      - appnetwork
+  api:
+    container_name: nlw_backend
+    build: 
+      context: .
+    ports:
+      - "3333:3333"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@nlw-unite-do-user-16299903-0.c.db.ondigitalocean.com:25060/${POSTGRES_DB}?sslmode=require
+      - API_BASE_URL=${API_BASE_URL} 
+    depends_on:
+      - db
+    # volumes:
+    #   - 'db:/var/lib/postgresql/data'
+    networks:
+      - appnetwork
+
+networks:
+  appnetwork:
+    driver: bridge

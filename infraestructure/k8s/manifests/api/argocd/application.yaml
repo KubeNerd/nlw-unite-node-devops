@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: nlw-backend
+  namespace: argocd
+
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/RxJSVini/nlw-unite.git
+    targetRevision: HEAD
+    path: infraestructure/k8s/helm/deploy
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nlw-helm
+  syncPolicy:
+    automated:
+      prune: true

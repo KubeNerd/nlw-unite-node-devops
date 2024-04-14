@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlwunite-backend-api
+  namespace: nlwunite
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nlwunite-backend-api
+  template:
+    metadata:
+      labels:
+        app: nlwunite-backend-api
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: nlwunite-worker2
+      containers:
+      - name: nlwunite-backend-api
+        image: viniciuspoa2/nlwunite_backend:f02910c
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "1"
+          requests:
+            memory: 256Mi
+            cpu: "0.5"
+        livenessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3333
+        readinessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3333
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: nlwunite-secret
+              key: DATABASE_URL
+
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nlwunite-configmap
+              key: API_BASE_URL
+        ports:
+        - containerPort: 3333
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1

@@ -1,0 +1,84 @@
+name: Pipeline CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: ${{ github.repository }}
+jobs:
+  gitleaks-code-analysis:
+    name: 'Security GitLeaks Job'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v4
+    - name: Security
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-push:
+    needs: gitleaks-code-analysis
+    name: 'Build and Push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: Generate sha
+        id: generate_sha
+        run: |
+            SHA=$(echo $GITHUB_SHA | head -c 7)
+            echo "sha=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Build docker image
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} -f /backend .
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }}'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Login container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image
+        run: |
+            echo "Pushing image with tag ${SHA}"
+            docker push ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }}
+            docker tag ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:${{ steps.generate_sha.outputs.sha }} ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:latest
+            echo "Pushing image with tag latest"
+            docker push ${{ secrets.REGISTRY_NAME }}/nlwunite_backend:latest
+
+      - name: Update tag Image 
+        run: |
+            file_path="deploy/values.yaml"
+
+            new_tag='${{ steps.generate_sha.outputs.sha }}'
+            
+            if [ -f "$file_path" ]; then
+                sed -i "/^  tag:/c\  tag: \"$new_tag\"" $file_path
+                echo "A tag foi atualizada para '$new_tag'."
+            else
+                echo "Error: file not found"
+            fi
+
+            git config user.email "${{ github.event.pusher.email  }}"
+            git config user.name "${{ github.event.pusher.name }}"
+
+
+            git add deploy/values.yaml
+            git commit -m "Update image tag to $new_tag" || echo "No changes to commit"
+            git push origin main
